@@ -10,14 +10,12 @@
     "build": "npm run build:types && npm run build:js",
     "prepare:types": "tsc --build tsconfig.prod.json",
     "prepare:js": "babel . --ignore \"src,node_modules\" --no-comments --extensions .ts -d .",
-    "prepare": "npm run prepare:js && npm run prepare:types",
-    "all": "npm run clean && npm run build && npm run prepare",
+    "prepare": "npm run clean && npm run build && npm run prepare:js && npm run prepare:types",
     "clean": "rimraf dist && rimraf ./*.d.ts && rimraf ./*.js",
     "lint": "eslint src/**/* --fix",
     "types:check": "tsc --noEmit",
     "types:watch": "npm run types:check -- --watch",
     "start": "npm run build:js -- --watch",
-    "prepublish": "npm run all",
     "publish": "npm publish --access public"
   },
   "repository": {
