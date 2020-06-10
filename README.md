@@ -5,16 +5,16 @@
 ## Installation
 
 ```bash
-npm install @xpc/common
+npm install @newstudios/common
 ```
 or
 ```bash
-yarn add @xpc/common
+yarn add @newstudios/common
 ```
 
 ## LICENSE
 
 MIT
 
-[npm-image]: https://img.shields.io/npm/v/@xpc/common.svg?style=flat-square
-[npm-url]: https://npmjs.org/package/@xpc/common
+[npm-image]: https://img.shields.io/npm/v/@newstudios/common.svg?style=flat-square
+[npm-url]: https://npmjs.org/package/@newstudios/common

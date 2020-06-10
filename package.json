@@ -8,15 +8,16 @@
     "build:js": "babel src --no-comments --extensions \".ts,.tsx\" --out-dir dist",
     "build:types": "tsc --emitDeclarationOnly",
     "build": "npm run build:types && npm run build:js",
-    "prepare:types": "tsc --build tsconfig.prod.json",
-    "prepare:js": "babel . --ignore \"src,node_modules\" --no-comments --extensions .ts -d .",
-    "prepare": "npm run clean && npm run build && npm run prepare:js && npm run prepare:types",
+    "pre:types": "tsc --build tsconfig.prod.json",
+    "pre:js": "babel . --ignore \"src,node_modules\" --no-comments --extensions .ts -d .",
+    "pre": "npm run pre:types && npm run pre:js",
+    "prepublishOnly": "npm run clean && npm run build && npm run pre",
     "clean": "rimraf dist && rimraf ./*.d.ts && rimraf ./*.js",
     "lint": "eslint src/**/* --fix",
     "types:check": "tsc --noEmit",
     "types:watch": "npm run types:check -- --watch",
     "start": "npm run build:js -- --watch",
-    "publish": "npm publish --access public"
+    "dryrun": "npm publish --access public -dry-run"
   },
   "repository": {
     "type": "git",
