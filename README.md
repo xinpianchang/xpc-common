@@ -1,4 +1,4 @@
-# @xpc/common
+# @newstudios/common
 
   [![NPM Version][npm-image]][npm-url]
 

@@ -1,5 +1,5 @@
 {
-  "name": "@xpc/common",
+  "name": "@newstudios/common",
   "version": "0.1.0",
   "description": "a common utils for js",
   "main": "index.js",
@@ -16,7 +16,9 @@
     "lint": "eslint src/**/* --fix",
     "types:check": "tsc --noEmit",
     "types:watch": "npm run types:check -- --watch",
-    "start": "npm run build:js -- --watch"
+    "start": "npm run build:js -- --watch",
+    "prepublish": "npm run all",
+    "publish": "npm publish --access public"
   },
   "repository": {
     "type": "git",
