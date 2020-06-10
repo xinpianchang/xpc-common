@@ -18,6 +18,10 @@
     "types:watch": "npm run types:check -- --watch",
     "start": "npm run build:js -- --watch"
   },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/xinpianchang/xpc-common.git"
+  },
   "keywords": [
     "javascript",
     "common",
@@ -25,6 +29,7 @@
   ],
   "author": "tangye <tangye@xinpianchang.com>",
   "license": "MIT",
+  "homepage": "https://github.com/xinpianchang/xpc-common#readme",
   "devDependencies": {
     "@babel/cli": "^7.10.1",
     "@babel/core": "^7.10.2",
@@ -37,7 +42,10 @@
     "eslint": "^7.2.0",
     "lint-staged": "^10.2.9",
     "rimraf": "^3.0.2",
-    "typescript": "^3.9.5"
+    "typescript": "^3.8.3"
+  },
+  "engines": {
+    "node": ">= 10.0.0"
   },
   "files": [
     "dist",
