@@ -1,0 +1,58 @@
+{
+  "name": "@xpc/common",
+  "version": "0.1.0",
+  "description": "a common utils for js",
+  "main": "index.js",
+  "types": "index.ts",
+  "scripts": {
+    "build:js": "babel src --no-comments --extensions \".ts,.tsx\" --out-dir dist",
+    "build:types": "tsc --emitDeclarationOnly",
+    "build": "npm run build:types && npm run build:js",
+    "prepare:types": "tsc --build tsconfig.prod.json",
+    "prepare:js": "babel . --ignore \"src,node_modules\" --no-comments --extensions .ts -d .",
+    "prepare": "npm run prepare:js && npm run prepare:types",
+    "clean": "rimraf dist",
+    "lint": "eslint src/**/* --fix",
+    "types:check": "tsc --noEmit",
+    "types:watch": "npm run types:check -- --watch",
+    "start": "npm run build:js -- --watch"
+  },
+  "keywords": [
+    "javascript",
+    "common",
+    "utils"
+  ],
+  "author": "tangye <tangye@xinpianchang.com>",
+  "license": "MIT",
+  "devDependencies": {
+    "@babel/cli": "^7.10.1",
+    "@babel/core": "^7.10.2",
+    "@babel/plugin-proposal-class-properties": "^7.10.1",
+    "@babel/plugin-transform-typescript": "^7.10.1",
+    "@babel/preset-env": "^7.10.2",
+    "@babel/preset-typescript": "^7.10.1",
+    "@typescript-eslint/eslint-plugin": "^3.2.0",
+    "@typescript-eslint/parser": "^3.2.0",
+    "eslint": "^7.2.0",
+    "lint-staged": "^10.2.9",
+    "rimraf": "^3.0.2",
+    "typescript": "^3.9.5"
+  },
+  "files": [
+    "dist",
+    "index.js",
+    "index.d.ts",
+    "errors.js",
+    "errors.d.ts",
+    "event.js",
+    "event.d.ts",
+    "functional.js",
+    "functional.d.ts",
+    "iterator.js",
+    "iterator.d.ts",
+    "lifecycle.js",
+    "lifecycle.d.ts",
+    "linkedList.js",
+    "linkedList.d.ts"
+  ]
+}
