@@ -12,11 +12,18 @@ import { once } from './functional'
  * another disposable. This tracking is very simple an only works for classes that either
  * extend Disposable or use a DisposableStore. This means there are a lot of false positives.
  */
-const TRACK_DISPOSABLES = false
+export let TRACK_DISPOSABLES = false
+
+/**
+ * Enables or disables tracking of potentially leaked disposables for debug intent.
+ */
+export function setDebug(debug: boolean) {
+  TRACK_DISPOSABLES = debug
+}
 
 const __is_disposable_tracked__ = '__is_disposable_tracked__'
 
-function markTracked<T extends IDisposable>(x: T): void {
+export function markTracked<T extends IDisposable>(x: T): void {
   if (!TRACK_DISPOSABLES) {
     return
   }
@@ -30,7 +37,7 @@ function markTracked<T extends IDisposable>(x: T): void {
   }
 }
 
-function trackDisposable<T extends IDisposable>(x: T): T {
+export function trackDisposable<T extends IDisposable>(x: T): T {
   if (!TRACK_DISPOSABLES) {
     return x
   }
@@ -92,21 +99,6 @@ export function toDisposable(fn: () => void): IDisposable {
     }
   })
   return self
-}
-
-export function onDispose<T extends IDisposable>(disposable: T, fn: (this: T) => void): IDisposable {
-  const dispose = disposable.dispose
-  let disposed = false
-  disposable.dispose = () => {
-    if (!disposed) {
-      disposed = true
-      dispose.call(disposable)
-      fn.call(disposable)
-    }
-  }
-  return {
-    dispose: () => disposed = true
-  }
 }
 
 export class DisposableStore implements IDisposable {

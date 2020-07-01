@@ -19,3 +19,21 @@ export function once<T extends Function>(this: any, fn: T): T {
     return result
   } as any) as T
 }
+
+export function debounce<T extends Function>(this: any, fn: T, interval: number): T {
+  const _this = this
+  let result: any
+  let last = 0
+
+  return (function() {
+    const now = Date.now()
+    if (now - last < interval) {
+      return result
+    }
+
+    result = fn.apply(_this, arguments)
+    last = now
+
+    return result
+  } as any) as T
+}

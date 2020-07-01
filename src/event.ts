@@ -111,6 +111,30 @@ export namespace Event {
    * Given a collection of events, returns a single event which emits
    * whenever any of the provided events emit.
    */
+  export function any<T1>(e1: Event<T1>): Event<T1>
+  export function any<T1, T2>(e1: Event<T1>, e2: Event<T2>): Event<T1 | T2>
+  export function any<T1, T2, T3>(e1: Event<T1>, e2: Event<T2>, e3: Event<T3>): Event<T1 | T2 | T3>
+  export function any<T1, T2, T3, T4>(
+    e1: Event<T1>,
+    e2: Event<T2>,
+    e3: Event<T3>,
+    e4: Event<T4>
+  ): Event<T1 | T2 | T3 | T4>
+  export function any<T1, T2, T3, T4, T5>(
+    e1: Event<T1>,
+    e2: Event<T2>,
+    e3: Event<T3>,
+    e4: Event<T4>,
+    e5: Event<T5>
+  ): Event<T1 | T2 | T3 | T4 | T5>
+  export function any<T1, T2, T3, T4, T5, T>(
+    e1: Event<T1>,
+    e2: Event<T2>,
+    e3: Event<T3>,
+    e4: Event<T4>,
+    e5: Event<T5>,
+    ...e6: Event<T>[]
+  ): Event<T1 | T2 | T3 | T4 | T5 | T>
   export function any<T>(...events: Event<T>[]): Event<T> {
     return (listener, thisArgs = null, disposables?) =>
       combinedDisposable(
@@ -148,7 +172,7 @@ export namespace Event {
       },
       onLastListenerRemove() {
         listener.dispose()
-      }
+      },
     })
 
     return emitter.event
@@ -409,9 +433,9 @@ export namespace Event {
   }
 
   export interface NodeEventEmitter {
-    on(event: string | symbol, listener: Function): any
+    on(event: string | symbol, listener: Function): unknown
 
-    off(event: string | symbol, listener: Function): any
+    off(event: string | symbol, listener: Function): unknown
   }
 
   export function fromNodeEventEmitter<T>(
@@ -427,20 +451,52 @@ export namespace Event {
     return result.event
   }
 
-  export interface DOMEventEmitter {
-    addEventListener(event: string | symbol, listener: Function): void
+  interface EventListenerOptions {
+    capture?: boolean
+    passive?: boolean
+  }
 
-    removeEventListener(event: string | symbol, listener: Function): void
+  export type ListenerOptions = EventListenerOptions | boolean
+
+  export interface DOMEventEmitter {
+    addEventListener(event: string | symbol, listener: Function, options?: ListenerOptions): void
+
+    removeEventListener(event: string | symbol, listener: Function, options?: ListenerOptions): void
   }
 
   export function fromDOMEventEmitter<T>(
     emitter: DOMEventEmitter,
-    eventName: string,
-    map: (...args: any[]) => T = id => id
+    eventName: string | string[],
+    options?: ListenerOptions,
+    map?: (...args: any[]) => T
+  ): Event<T>
+  export function fromDOMEventEmitter<T>(
+    emitter: DOMEventEmitter,
+    eventName: string | string[],
+    map?: (...args: any[]) => T
+  ): Event<T>
+  export function fromDOMEventEmitter<T>(
+    emitter: DOMEventEmitter,
+    eventName: string | string[],
+    arg1?: ListenerOptions | ((...args: any[]) => T),
+    arg2?: (...args: any[]) => T
   ): Event<T> {
+    let options: ListenerOptions = false
+    let map: (...args: any[]) => T = id => id
+    if (typeof arg1 === 'function') {
+      map = arg1
+    } else {
+      if (arg1) {
+        options = arg1
+      }
+      if (arg2) {
+        map = arg2
+      }
+    }
+    const names = Array.isArray(eventName) ? eventName : [eventName]
     const fn = (...args: any[]) => result.fire(map(...args))
-    const onFirstListenerAdd = () => emitter.addEventListener(eventName, fn)
-    const onLastListenerRemove = () => emitter.removeEventListener(eventName, fn)
+    const onFirstListenerAdd = () => names.forEach(name => emitter.addEventListener(name, fn, options))
+    const onLastListenerRemove = () => names.forEach(name => emitter.removeEventListener(name, fn, options))
     const result = new Emitter<T>({ onFirstListenerAdd, onLastListenerRemove })
 
     return result.event
@@ -579,7 +635,7 @@ class LeakageMonitor {
 	}
  */
 export class Emitter<T> {
-  private static readonly _noop = function() {}
+  private static readonly _noop = function () {}
 
   private readonly _options?: EmitterOptions
   private readonly _leakageMon?: LeakageMonitor
