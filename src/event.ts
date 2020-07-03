@@ -6,11 +6,11 @@
 import { onUnexpectedError } from './errors'
 import { once as onceFn } from './functional'
 import {
-  combinedDisposable,
   Disposable,
   DisposableStore,
   IDisposable,
-  toDisposable
+  toDisposable,
+  dispose
 } from './lifecycle'
 import { LinkedList } from './linkedList'
 
@@ -136,10 +136,11 @@ export namespace Event {
     ...e6: Event<T>[]
   ): Event<T1 | T2 | T3 | T4 | T5 | T>
   export function any<T>(...events: Event<T>[]): Event<T> {
-    return (listener, thisArgs = null, disposables?) =>
-      combinedDisposable(
-        ...events.map(event => event(e => listener.call(thisArgs, e), null, disposables))
-      )
+    return (listener, thisArgs = null, disposables?) => ({
+      dispose() {
+        dispose(events.map(event => event(e => listener.call(thisArgs, e), null, disposables)))
+      }
+    })
   }
 
   /**
@@ -813,51 +814,6 @@ export class PauseableEmitter<T> extends Emitter<T> {
 
 export interface IWaitUntil {
   waitUntil(thenable: Promise<any>): void
-}
-
-export class AsyncEmitter<T extends IWaitUntil> extends Emitter<T> {
-  private _asyncDeliveryQueue?: [Listener<T>, T, Promise<any>[]][]
-
-  async fireAsync(eventFn: (thenables: Promise<any>[], listener: Function) => T): Promise<void> {
-    if (!this._listeners) {
-      return
-    }
-
-    // put all [listener,event]-pairs into delivery queue
-    // then emit all event. an inner/nested event might be
-    // the driver of this
-    if (!this._asyncDeliveryQueue) {
-      this._asyncDeliveryQueue = []
-    }
-
-    for (let iter = this._listeners.iterator(), e = iter.next(); !e.done; e = iter.next()) {
-      const thenables: Promise<void>[] = []
-      this._asyncDeliveryQueue.push([
-        e.value,
-        eventFn(thenables, typeof e.value === 'function' ? e.value : e.value[0]),
-        thenables
-      ])
-    }
-
-    while (this._asyncDeliveryQueue.length > 0) {
-      const [listener, event, thenables] = this._asyncDeliveryQueue.shift()!
-      try {
-        if (typeof listener === 'function') {
-          listener.call(undefined, event)
-        } else {
-          listener[0].call(listener[1], event)
-        }
-      } catch (e) {
-        onUnexpectedError(e)
-        continue
-      }
-
-      // freeze thenables-collection to enforce sync-calls to
-      // wait until and then wait for all thenables to resolve
-      Object.freeze(thenables)
-      await Promise.all(thenables).catch(e => onUnexpectedError(e))
-    }
-  }
 }
 
 export class EventMultiplexer<T> implements IDisposable {
