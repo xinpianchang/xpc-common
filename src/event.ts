@@ -466,18 +466,18 @@ export namespace Event {
 
   export function fromDOMEventEmitter<T>(
     emitter: DOMEventEmitter,
-    eventName: string | string[],
+    eventName: string | readonly string[],
     options?: ListenerOptions,
     map?: (...args: any[]) => T
   ): Event<T>
   export function fromDOMEventEmitter<T>(
     emitter: DOMEventEmitter,
-    eventName: string | string[],
+    eventName: string | readonly string[],
     map?: (...args: any[]) => T
   ): Event<T>
   export function fromDOMEventEmitter<T>(
     emitter: DOMEventEmitter,
-    eventName: string | string[],
+    eventName: string | readonly string[],
     arg1?: ListenerOptions | ((...args: any[]) => T),
     arg2?: (...args: any[]) => T
   ): Event<T> {

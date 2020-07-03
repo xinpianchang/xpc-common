@@ -5,6 +5,24 @@
 
 import { once } from './functional'
 
+declare global {
+  let TRACK_DISPOSABLES: boolean
+}
+
+let _global: typeof globalThis & { TRACK_DISPOSABLES?: boolean }
+
+declare const global: any
+
+if (typeof window !== 'undefined') {
+  _global = window
+} else if (typeof global !== 'undefined') {
+  _global = global
+} else if (typeof self !== 'undefined') {
+  _global = self
+} else {
+  _global = {} as any
+}
+
 /**
  * Enables logging of potentially leaked disposables.
  *
@@ -12,7 +30,7 @@ import { once } from './functional'
  * another disposable. This tracking is very simple an only works for classes that either
  * extend Disposable or use a DisposableStore. This means there are a lot of false positives.
  */
-export let TRACK_DISPOSABLES = false
+_global.TRACK_DISPOSABLES = false
 
 /**
  * Enables or disables tracking of potentially leaked disposables for debug intent.
