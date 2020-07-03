@@ -136,11 +136,18 @@ export namespace Event {
     ...e6: Event<T>[]
   ): Event<T1 | T2 | T3 | T4 | T5 | T>
   export function any<T>(...events: Event<T>[]): Event<T> {
-    return (listener, thisArgs = null, disposables?) => ({
-      dispose() {
-        dispose(events.map(event => event(e => listener.call(thisArgs, e), null, disposables)))
+    return (listener, thisArgs = null, disposables?) => {
+      const array = events.map(event => event(e => listener.call(thisArgs, e), null, disposables))
+      let disposed = false
+      return {
+        dispose() {
+          if (!disposed) {
+            disposed = true
+            dispose(array)
+          }
+        }
       }
-    })
+    }
   }
 
   /**
