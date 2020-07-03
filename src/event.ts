@@ -6,13 +6,14 @@
 import { onUnexpectedError } from './errors'
 import { once as onceFn } from './functional'
 import {
-  combinedDisposable,
   Disposable,
   DisposableStore,
   IDisposable,
-  toDisposable
+  toDisposable,
+  dispose
 } from './lifecycle'
 import { LinkedList } from './linkedList'
+import { CancellationToken } from './cancellation'
 
 /**
  * To an event a function with one or zero parameters
@@ -136,10 +137,11 @@ export namespace Event {
     ...e6: Event<T>[]
   ): Event<T1 | T2 | T3 | T4 | T5 | T>
   export function any<T>(...events: Event<T>[]): Event<T> {
-    return (listener, thisArgs = null, disposables?) =>
-      combinedDisposable(
-        ...events.map(event => event(e => listener.call(thisArgs, e), null, disposables))
-      )
+    return (listener, thisArgs = null, disposables?) => ({
+      dispose() {
+        dispose(events.map(event => event(e => listener.call(thisArgs, e), null, disposables)))
+      }
+    })
   }
 
   /**
@@ -619,20 +621,20 @@ class LeakageMonitor {
  * Sample:
  class Document {
 
-		private readonly _onDidChange = new Emitter<(value:string)=>any>();
+    private readonly _onDidChange = new Emitter<(value:string)=>any>();
 
-		public onDidChange = this._onDidChange.event;
+    public onDidChange = this._onDidChange.event;
 
-		// getter-style
-		// get onDidChange(): Event<(value:string)=>any> {
-		// 	return this._onDidChange.event;
-		// }
+    // getter-style
+    // get onDidChange(): Event<(value:string)=>any> {
+    //   return this._onDidChange.event;
+    // }
 
-		private _doIt() {
-			//...
-			this._onDidChange.fire(value);
-		}
-	}
+    private _doIt() {
+      //...
+      this._onDidChange.fire(value);
+    }
+  }
  */
 export class Emitter<T> {
   private static readonly _noop = function () {}
@@ -733,8 +735,8 @@ export class Emitter<T> {
         this._deliveryQueue = new LinkedList()
       }
 
-      for (let iter = this._listeners.iterator(), e = iter.next(); !e.done; e = iter.next()) {
-        this._deliveryQueue.push([e.value, event])
+      for (let listener of this._listeners) {
+        this._deliveryQueue.push([listener, event])
       }
 
       while (this._deliveryQueue.size > 0) {
@@ -816,46 +818,54 @@ export interface IWaitUntil {
 }
 
 export class AsyncEmitter<T extends IWaitUntil> extends Emitter<T> {
-  private _asyncDeliveryQueue?: [Listener<T>, T, Promise<any>[]][]
+  private _asyncDeliveryQueue?: LinkedList<[Listener<T>, Omit<T, 'waitUntil'>]>
 
-  async fireAsync(eventFn: (thenables: Promise<any>[], listener: Function) => T): Promise<void> {
+  async fireAsync(data: Omit<T, 'waitUntil'>, token: CancellationToken, promiseJoin?: (p: Promise<any>, listener: Function) => Promise<any>): Promise<void> {
     if (!this._listeners) {
-      return
+      return;
     }
 
-    // put all [listener,event]-pairs into delivery queue
-    // then emit all event. an inner/nested event might be
-    // the driver of this
     if (!this._asyncDeliveryQueue) {
-      this._asyncDeliveryQueue = []
+      this._asyncDeliveryQueue = new LinkedList();
     }
 
-    for (let iter = this._listeners.iterator(), e = iter.next(); !e.done; e = iter.next()) {
-      const thenables: Promise<void>[] = []
-      this._asyncDeliveryQueue.push([
-        e.value,
-        eventFn(thenables, typeof e.value === 'function' ? e.value : e.value[0]),
-        thenables
-      ])
+    for (const listener of this._listeners) {
+      this._asyncDeliveryQueue.push([listener, data]);
     }
 
-    while (this._asyncDeliveryQueue.length > 0) {
-      const [listener, event, thenables] = this._asyncDeliveryQueue.shift()!
+    while (this._asyncDeliveryQueue.size > 0 && !token.isCancellationRequested) {
+
+      const [listener, data] = this._asyncDeliveryQueue.shift()!;
+      const thenables: Promise<any>[] = [];
+
+      const event = <T>{
+        ...data,
+        waitUntil: (p: Promise<any>): void => {
+          if (Object.isFrozen(thenables)) {
+            throw new Error('waitUntil can NOT be called asynchronous');
+          }
+          if (promiseJoin) {
+            p = promiseJoin(p, typeof listener === 'function' ? listener : listener[0]);
+          }
+          thenables.push(p);
+        }
+      };
+
       try {
         if (typeof listener === 'function') {
-          listener.call(undefined, event)
+          listener.call(undefined, event);
         } else {
-          listener[0].call(listener[1], event)
+          listener[0].call(listener[1], event);
         }
       } catch (e) {
-        onUnexpectedError(e)
-        continue
+        onUnexpectedError(e);
+        continue;
       }
 
       // freeze thenables-collection to enforce sync-calls to
       // wait until and then wait for all thenables to resolve
-      Object.freeze(thenables)
-      await Promise.all(thenables).catch(e => onUnexpectedError(e))
+      Object.freeze(thenables);
+      await Promise.all(thenables).catch(e => onUnexpectedError(e));
     }
   }
 }
