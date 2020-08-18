@@ -1,6 +1,6 @@
 {
   "name": "@newstudios/common",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "description": "a common lifecycle and event utils for js",
   "main": "lib/index.js",
   "module": "dist/index.js",
