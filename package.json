@@ -1,6 +1,6 @@
 {
   "name": "@newstudios/common",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "description": "a common utils for js",
   "main": "index.js",
   "types": "index.d.ts",
