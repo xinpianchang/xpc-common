@@ -151,6 +151,57 @@ export namespace Event {
   }
 
   /**
+   * Given a collection of events, returns a single event which emits
+   * when all of the provided events have been emitted once.
+   */
+  export function all<T1>(e1: Event<T1>): Event<[T1]>
+  export function all<T1, T2>(e1: Event<T1>, e2: Event<T2>): Event<[T1, T2]>
+  export function all<T1, T2, T3>(e1: Event<T1>, e2: Event<T2>, e3: Event<T3>): Event<[T1, T2, T3]>
+  export function all<T1, T2, T3, T4>(
+    e1: Event<T1>,
+    e2: Event<T2>,
+    e3: Event<T3>,
+    e4: Event<T4>
+  ): Event<[T1, T2, T3, T4]>
+  export function all<T1, T2, T3, T4, T5>(
+    e1: Event<T1>,
+    e2: Event<T2>,
+    e3: Event<T3>,
+    e4: Event<T4>,
+    e5: Event<T5>
+  ): Event<[T1, T2, T3, T4, T5]>
+  export function all<T1, T2, T3, T4, T5, T>(
+    e1: Event<T1>,
+    e2: Event<T2>,
+    e3: Event<T3>,
+    e4: Event<T4>,
+    e5: Event<T5>,
+    ...e6: Event<T>[]
+  ): Event<[T1, T2, T3, T4, T5, ...T[]]>
+  export function all<T>(...events: Event<T>[]): Event<T[]> {
+    return (listener, thisArgs = null, disposables?) => {
+      let done = events.length
+      const results: T[] = []
+      const setResult = (index: number, e: T) => {
+        results[index] = e
+        if (--done === 0) {
+          listener.call(thisArgs, results)
+        }
+      }
+      const array = events.map((event, index) => once(event)(setResult.bind(null, index), null, disposables))
+      let disposed = false
+      return {
+        dispose() {
+          if (!disposed) {
+            disposed = true
+            dispose(array)
+          }
+        }
+      }
+    }
+  }
+
+  /**
    * Given an event and a `merge` function, returns another event which maps each element
    * and the cumulative result through the `merge` function. Similar to `map`, but with memory.
    */

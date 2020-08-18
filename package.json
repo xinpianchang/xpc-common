@@ -1,23 +1,24 @@
 {
   "name": "@newstudios/common",
-  "version": "0.1.6",
-  "description": "a common utils for js",
-  "main": "index.js",
-  "types": "index.d.ts",
+  "version": "0.2.0",
+  "description": "a common lifecycle and event utils for js",
+  "main": "lib/index.js",
+  "module": "dist/index.js",
+  "types": "dist/index.d.ts",
   "scripts": {
-    "build:js": "babel src --no-comments --extensions \".ts,.tsx\" --out-dir dist",
-    "build:types": "tsc --emitDeclarationOnly",
-    "build": "concurrently \"npm:build:*\"",
-    "pre:types": "tsc --build tsconfig.prod.json",
-    "pre:js": "babel . --ignore \"src,node_modules\" --no-comments --extensions .ts -d .",
-    "pre": "concurrently \"npm:pre:*\"",
-    "prepublishOnly": "npm run clean:build",
-    "clean": "rimraf dist && rimraf ./*.d.ts && rimraf ./*.js",
-    "clean:build": "npm run clean && npm run build && npm run pre",
+    "build:js:cjs": "babel --config-file ./babel.cjs.json src --no-comments --extensions \".ts,.tsx\" --out-dir lib",
+    "build:types:cjs": "tsc --emitDeclarationOnly",
+    "build:js:esm": "babel --config-file ./babel.esm.json src --no-comments --extensions \".ts,.tsx\" --out-dir dist",
+    "build:types:esm": "tsc --emitDeclarationOnly --p tsconfig.esm.json",
+    "build:cjs": "concurrently \"npm:build:*:cjs\"",
+    "build:esm": "concurrently \"npm:build:*:esm\"",
+    "build": "concurrently \"npm:build:cjs\" \"npm:build:esm\"",
+    "prepublishOnly": "npm run clean && npm run build",
+    "clean": "concurrently \"rimraf dist\" \"rimraf lib\"",
     "lint": "eslint src/**/* --fix",
     "types:check": "tsc --noEmit",
     "types:watch": "npm run types:check -- --watch",
-    "start": "concurrently \"npm run build:js -- --watch\" \"npm run build:types -- -w\"",
+    "start": "npm run build:js -- --watch",
     "dryrun": "npm publish --access public --dry-run"
   },
   "repository": {
@@ -27,7 +28,9 @@
   "keywords": [
     "javascript",
     "common",
-    "utils"
+    "utils",
+    "lifecycle",
+    "event"
   ],
   "author": "tangye <tangye@xinpianchang.com>",
   "license": "MIT",
@@ -48,30 +51,15 @@
     "eslint": "^7.2.0",
     "lint-staged": "^10.2.9",
     "rimraf": "^3.0.2",
-    "typescript": "^3.9.5"
+    "typescript": "^3.9.7"
   },
   "engines": {
     "node": ">= 10.0.0"
   },
   "files": [
     "dist",
-    "index.js",
-    "index.d.ts",
-    "errors.js",
-    "errors.d.ts",
-    "event.js",
-    "event.d.ts",
-    "functional.js",
-    "functional.d.ts",
-    "iterator.js",
-    "iterator.d.ts",
-    "lifecycle.js",
-    "lifecycle.d.ts",
-    "linkedList.js",
-    "linkedList.d.ts",
-    "async.js",
-    "async.d.ts",
-    "cancellation.js",
-    "cancellation.d.ts"
-  ]
+    "lib"
+  ],
+  "npmName": "@newstudios/common",
+  "sideEffects": false
 }

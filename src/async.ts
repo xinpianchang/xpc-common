@@ -362,8 +362,8 @@ export function timeout(millis: number, token?: CancellationToken): CancelablePr
 	})
 }
 
-export function disposableTimeout(handler: () => void, timeout = 0): IDisposable {
-	const timer = setTimeout(handler, timeout)
+export function disposableTimeout<T extends any[]>(handler: (...args: T) => void, timeout = 0, ...args: T): IDisposable {
+	const timer = setTimeout(handler, timeout, ...args)
 	return toDisposable(() => clearTimeout(timer))
 }
 

@@ -11,13 +11,10 @@
     }]
   ],
   "plugins": [
+    "@babel/plugin-proposal-class-properties",
     ["@babel/plugin-transform-typescript", {
       "allowNamespaces": true
-    }],
-    ["@babel/plugin-proposal-class-properties", {
-      "loose": true
-    }],
-    "@babel/plugin-proposal-export-namespace-from"
+    }]
   ],
   "ignore": ["**/*.d.ts", "node_modules"]
 }

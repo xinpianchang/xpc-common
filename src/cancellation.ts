@@ -21,10 +21,10 @@ export interface CancellationToken {
 	 *
 	 * @event
 	 */
-	readonly onCancellationRequested: (listener: (e: any) => any, thisArgs?: any, disposables?: IDisposable[]) => IDisposable
+	readonly onCancellationRequested: Event<void>
 }
 
-const shortcutEvent: Event<any> = Object.freeze(function (callback, context?): IDisposable {
+const shortcutEvent: Event<void> = Object.freeze(function (callback, context?): IDisposable {
 	const handle = setTimeout(callback.bind(context), 0)
 	return { dispose() { clearTimeout(handle) } }
 })
@@ -60,13 +60,13 @@ export namespace CancellationToken {
 class MutableToken implements CancellationToken {
 
 	private _isCancelled = false
-	private _emitter: Emitter<any> | null = null
+	private _emitter: Emitter<void> | null = null
 
 	public cancel() {
 		if (!this._isCancelled) {
 			this._isCancelled = true
 			if (this._emitter) {
-				this._emitter.fire(undefined)
+				this._emitter.fire()
 				this.dispose()
 			}
 		}
@@ -76,12 +76,12 @@ class MutableToken implements CancellationToken {
 		return this._isCancelled
 	}
 
-	get onCancellationRequested(): Event<any> {
+	get onCancellationRequested(): Event<void> {
 		if (this._isCancelled) {
 			return shortcutEvent
 		}
 		if (!this._emitter) {
-			this._emitter = new Emitter<any>()
+			this._emitter = new Emitter<void>()
 		}
 		return this._emitter.event
 	}
