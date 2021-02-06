@@ -137,7 +137,7 @@ const canceledName = 'Canceled'
 /**
  * Checks if the given error is a promise in canceled state
  */
-export function isPromiseCanceledError(error: any): boolean {
+export function isPromiseCanceledError(error: unknown): boolean {
   return error instanceof Error && error.name === canceledName && error.message === canceledName
 }
 

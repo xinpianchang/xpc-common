@@ -4,7 +4,7 @@
  *--------------------------------------------------------------------------------------------*/
 
 import { CancellationToken, CancellationTokenSource } from './cancellation'
-import * as errors from './errors'
+import { canceled } from './errors'
 import { Emitter, Event } from './event'
 import { IDisposable, toDisposable } from './lifecycle'
 
@@ -37,7 +37,7 @@ export function createCancelablePromise<T>(callback: (token: CancellationToken) 
 	const thenable = callback(source.token)
 	const promise = new Promise<T>((resolve, reject) => {
 		source.token.onCancellationRequested(() => {
-			reject(errors.canceled())
+			reject(canceled())
 		})
 		Promise.resolve(thenable).then(value => {
 			source.dispose()
@@ -66,21 +66,39 @@ export function createCancelablePromise<T>(callback: (token: CancellationToken) 
 
 export function raceCancellation<T>(promise: Promise<T>, token: CancellationToken): Promise<T | undefined>
 export function raceCancellation<T>(promise: Promise<T>, token: CancellationToken, defaultValue: T): Promise<T>
-export function raceCancellation<T>(promise: Promise<T>, token: CancellationToken, defaultValue?: T): Promise<T> {
-	return Promise.race([promise, new Promise<T>(resolve => token.onCancellationRequested(() => resolve(defaultValue)))])
+export function raceCancellation<T>(promise: Promise<T>, token: CancellationToken, defaultValue?: T): Promise<T | undefined> {
+	return Promise.race([promise, new Promise<T | undefined>(resolve => token.onCancellationRequested(() => resolve(defaultValue)))])
 }
 
-export function raceTimeout<T>(promise: Promise<T>, timeout: number, onTimeout?: () => void): Promise<T> {
-	let promiseResolve: (() => void) | undefined = undefined
+/**
+ * Returns as soon as one of the promises is resolved and cancels remaining promises
+ */
+export async function raceCancellablePromises<T>(cancellablePromises: CancelablePromise<T>[]): Promise<T> {
+	let resolvedPromiseIndex = -1
+	const promises = cancellablePromises.map((promise, index) => promise.then(result => {
+    resolvedPromiseIndex = index
+    return result
+  }))
+	const result = await Promise.race(promises)
+	cancellablePromises.forEach((cancellablePromise, index) => {
+		if (index !== resolvedPromiseIndex) {
+			cancellablePromise.cancel()
+		}
+	})
+	return result
+}
+
+export function raceTimeout<T>(promise: Promise<T>, timeout: number, onTimeout?: () => void): Promise<T | undefined> {
+	let promiseResolve: ((value: T | undefined) => void) | undefined = undefined
 
 	const timer = setTimeout(() => {
-		promiseResolve?.()
+		promiseResolve?.(undefined)
 		onTimeout?.()
 	}, timeout)
 
 	return Promise.race([
 		promise.finally(() => clearTimeout(timer)),
-		new Promise<T>(resolve => promiseResolve = resolve)
+		new Promise<T | undefined>(resolve => promiseResolve = resolve)
 	])
 }
 
@@ -262,7 +280,7 @@ export class Delayer<T> implements IDisposable {
 
 		if (this.completionPromise) {
 			if (this.doReject) {
-				this.doReject(errors.canceled())
+				this.doReject(canceled())
 			}
 			this.completionPromise = null
 		}
@@ -357,7 +375,7 @@ export function timeout(millis: number, token?: CancellationToken): CancelablePr
 		const handle = setTimeout(resolve, millis)
 		token.onCancellationRequested(() => {
 			clearTimeout(handle)
-			reject(errors.canceled())
+			reject(canceled())
 		})
 	})
 }
@@ -427,7 +445,7 @@ export function first<T>(promiseFactories: ITask<Promise<T>>[], shouldStop: (t: 
 
 interface ILimitedTaskFactory<T> {
 	factory: ITask<Promise<T>>
-	c: (value?: T | Promise<T>) => void
+	c: (value: T | Promise<T>) => void
 	e: (error?: any) => void
 }
 

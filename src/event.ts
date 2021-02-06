@@ -492,9 +492,9 @@ export namespace Event {
   }
 
   export interface NodeEventEmitter {
-    on(event: string | symbol, listener: Function): unknown
+    on(event: string | symbol, listener: (...args: any[]) => any): unknown
 
-    off(event: string | symbol, listener: Function): unknown
+    off(event: string | symbol, listener: (...args: any[]) => any): unknown
   }
 
   export function fromNodeEventEmitter<T>(
@@ -518,9 +518,9 @@ export namespace Event {
   export type ListenerOptions = EventListenerOptions | boolean
 
   export interface DOMEventEmitter {
-    addEventListener(event: string | symbol, listener: Function, options?: ListenerOptions): void
+    addEventListener(event: string | symbol, listener: (arg: any) => any, options?: ListenerOptions): void
 
-    removeEventListener(event: string | symbol, listener: Function, options?: ListenerOptions): void
+    removeEventListener(event: string | symbol, listener: (arg: any) => any, options?: ListenerOptions): void
   }
 
   export function fromDOMEventEmitter<T>(
@@ -586,11 +586,11 @@ export namespace Event {
 
 type Listener<T> = [(e: T) => void, any] | ((e: T) => void)
 
-export interface EmitterOptions {
-  onFirstListenerAdd?: Function
-  onFirstListenerDidAdd?: Function
-  onListenerDidAdd?: Function
-  onLastListenerRemove?: Function
+export interface EmitterOptions<T = any> {
+  onFirstListenerAdd?: (emitter: Emitter<T>) => void
+  onFirstListenerDidAdd?: (emitter: Emitter<T>) => void
+  onListenerDidAdd?: (emitter: Emitter<T>, listener: (e: T) => any, thisArgs: any) => void
+  onLastListenerRemove?: (emitter: Emitter<T>) => void
   leakWarningThreshold?: number
 }
 
@@ -696,14 +696,14 @@ class LeakageMonitor {
 export class Emitter<T> {
   private static readonly _noop = function () {}
 
-  private readonly _options?: EmitterOptions
+  private readonly _options?: EmitterOptions<T>
   private readonly _leakageMon?: LeakageMonitor
   private _disposed = false
   private _event?: Event<T>
   private _deliveryQueue?: LinkedList<[Listener<T>, T]>
   protected _listeners?: LinkedList<Listener<T>>
 
-  constructor(options?: EmitterOptions) {
+  constructor(options?: EmitterOptions<T>) {
     this._options = options
     this._leakageMon =
       _globalLeakWarningThreshold > 0
@@ -830,7 +830,7 @@ export class PauseableEmitter<T> extends Emitter<T> {
   private _eventQueue = new LinkedList<T>()
   private _mergeFn?: (input: T[]) => T
 
-  constructor(options?: EmitterOptions & { merge?: (input: T[]) => T }) {
+  constructor(options?: EmitterOptions<T> & { merge?: (input: T[]) => T }) {
     super(options)
     this._mergeFn = options && options.merge
   }
