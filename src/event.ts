@@ -510,38 +510,73 @@ export namespace Event {
     return result.event
   }
 
-  interface EventListenerOptions {
-    capture?: boolean
-    passive?: boolean
-  }
-
-  export type ListenerOptions = EventListenerOptions | boolean
+  export type ListenerOptions = AddEventListenerOptions | boolean
+  type Key = string | symbol
 
   export interface DOMEventEmitter {
-    addEventListener(event: string | symbol, listener: (arg: any) => any, options?: ListenerOptions): void
-
-    removeEventListener(event: string | symbol, listener: (arg: any) => any, options?: ListenerOptions): void
+    addEventListener(event: Key, listener: (arg: unknown) => any, options?: AddEventListenerOptions | boolean): void
+    removeEventListener(event:Key, listener: (arg: unknown) => any, options?: EventListenerOptions | boolean): void
   }
 
-  export function fromDOMEventEmitter<T>(
-    emitter: DOMEventEmitter,
-    eventName: string | readonly string[],
+  export type EventMap<T extends DOMEventEmitter>
+  = T extends Window ? WindowEventMap
+  : T extends Document ? DocumentEventMap
+  : T extends HTMLMediaElement ? HTMLMediaElementEventMap
+  : T extends HTMLElement ? HTMLElementEventMap
+  : T extends EventSource ? EventSourceEventMap
+  : T extends AbortSignal ? AbortSignalEventMap
+  : T extends Worker ? WorkerEventMap
+  : T extends Animation ? AnimationEventMap
+  : T extends ApplicationCache ? ApplicationCacheEventMap
+  : T extends AudioScheduledSourceNode ? AudioScheduledSourceNodeEventMap
+  : T extends BaseAudioContext ? BaseAudioContextEventMap
+  : T extends AudioWorkletNode ? AudioWorkletNodeEventMap
+  : T extends BroadcastChannel ? BroadcastChannelEventMap
+  : T extends TextTrackCue ? TextTrackCueEventMap
+  : T extends TextTrackList ? TextTrackListEventMap
+  : T extends WebSocket ? WebSocketEventMap
+  : T extends XMLHttpRequest ? XMLHttpRequestEventMap
+  : T extends XMLHttpRequestEventTarget ? XMLHttpRequestEventTargetEventMap
+  : T extends RTCPeerConnection ? RTCPeerConnectionEventMap
+  : T extends Element ? ElementEventMap
+  : T extends EventTarget ? Record<Key, globalThis.Event>
+  : Record<Key, unknown>
+
+  export function fromDOMEventEmitter<T extends DOMEventEmitter, N extends Key>(
+    emitter: T,
+    eventName: N | readonly N[],
     options?: ListenerOptions,
-    map?: (...args: any[]) => T
-  ): Event<T>
-  export function fromDOMEventEmitter<T>(
+  ): Event<EventMap<T>[N]>
+  export function fromDOMEventEmitter<E, T extends DOMEventEmitter, N extends Key>(
+    emitter: T,
+    eventName: N | readonly N[],
+    map: (arg: EventMap<T>[N]) => E,
+  ): Event<E>
+  export function fromDOMEventEmitter<E, T extends DOMEventEmitter, N extends Key>(
+    emitter: T,
+    eventName: N | readonly N[],
+    options: ListenerOptions,
+    map: (arg: EventMap<T>[N]) => E,
+  ): Event<E>
+  export function fromDOMEventEmitter<E>(
     emitter: DOMEventEmitter,
-    eventName: string | readonly string[],
-    map?: (...args: any[]) => T
-  ): Event<T>
-  export function fromDOMEventEmitter<T>(
+    eventName: Key | readonly Key[],
+    options?: ListenerOptions,
+    map?: (arg: any) => E,
+  ): Event<E>
+  export function fromDOMEventEmitter<E>(
     emitter: DOMEventEmitter,
-    eventName: string | readonly string[],
-    arg1?: ListenerOptions | ((...args: any[]) => T),
-    arg2?: (...args: any[]) => T
-  ): Event<T> {
+    eventName: Key | readonly Key[],
+    map?: (arg: any) => E,
+  ): Event<E>
+  export function fromDOMEventEmitter(
+    emitter: DOMEventEmitter,
+    eventName: Key | readonly Key[],
+    arg1?: ListenerOptions | ((args: any) => any),
+    arg2?: (arg: any) => any
+  ): Event<any> {
     let options: ListenerOptions = false
-    let map: (...args: any[]) => T = id => id
+    let map: (...args: any[]) => any = id => id
     if (typeof arg1 === 'function') {
       map = arg1
     } else {
@@ -556,7 +591,7 @@ export namespace Event {
     const fn = (...args: any[]) => result.fire(map(...args))
     const onFirstListenerAdd = () => names.forEach(name => emitter.addEventListener(name, fn, options))
     const onLastListenerRemove = () => names.forEach(name => emitter.removeEventListener(name, fn, options))
-    const result = new Emitter<T>({ onFirstListenerAdd, onLastListenerRemove })
+    const result = new Emitter<any>({ onFirstListenerAdd, onLastListenerRemove })
 
     return result.event
   }
